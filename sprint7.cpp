@@ -101,7 +101,6 @@ bool tableroInicializado = false;
 string** gridDisparos = NULL;
 string** gridBarcos = NULL;
 char nombreJugador[TAM_NOMBRE];
-bool jugadorRegistrado = false;
 Barco barcosColocados[TOTAL_BARCOS_FLOTA];
 int cantidadBarcosColocados = 0;
 bool barcoYaColocado[TOTAL_BARCOS_FLOTA];
@@ -109,7 +108,6 @@ int disparosRealizados = 0;
 int aciertosTotales = 0;
 int fallosTotales = 0;
 int barcosHundidos = 0;
-bool faseColocacionCompleta = false;
 
 struct NodoDisparo {
 	Disparo dato;
@@ -209,10 +207,6 @@ string textoResultado(char resultado) {
 	return "Desconocido";
 }
 
-void limpiarBufferEntrada() {
-	cin.clear();
-	cin.ignore(1000, '\n');
-}
 int leerOpcionValida(int min, int max, const string& mensaje) {
 	string entrada;
 	int opcion;
@@ -324,7 +318,7 @@ string codigoAnchoDos(const string& codigo) {
 }
 string quitarEspacios(const string& texto) {
 	string limpio = "";
-	for (int i = 0; i < (int)texto.length(); i++) {
+	for (int i = 0; i < static_cast<int>(texto.length()); i++) {
 		if (texto[i] != ' ') {
 			limpio += texto[i];
 		}
@@ -332,7 +326,7 @@ string quitarEspacios(const string& texto) {
 	return limpio;
 }
 bool esLineaVacia(const string& linea) {
-	for (int i = 0; i < (int)linea.length(); i++) {
+	for (int i = 0; i < static_cast<int>(linea.length()); i++) {
 		if (!isspace(static_cast<unsigned char>(linea[i]))) {
 			return false;
 		}
@@ -375,7 +369,6 @@ void reiniciarPartida() {
 	aciertosTotales = 0;
 	fallosTotales = 0;
 	barcosHundidos = 0;
-	faseColocacionCompleta = false;
 
 	liberarHistorial();
 	cantidadBarcosSeleccionadosPtr = 0;
@@ -426,11 +419,11 @@ void mostrarTableroJugador() {
 	}
 }
 
-void contarCasillasFlotaPtr(string* gridBarcos, int totalCasillas,
+void contarCasillasFlotaPtr(string* inicioGrid, int totalCasillas,
                              int* totalConBarco, int* totalAgua) {
 	*totalConBarco = 0;
 	*totalAgua = 0;
-	string* actual = gridBarcos;
+	string* actual = inicioGrid;
 	for (int i = 0; i < totalCasillas; i++) {
 		if (*actual != "~ ") {
 			(*totalConBarco)++;
@@ -440,14 +433,14 @@ void contarCasillasFlotaPtr(string* gridBarcos, int totalCasillas,
 		actual++;
 	}
 }
-void contarResultadosDisparosPtr(string* gridDisparos, int totalCasillas,
+void contarResultadosDisparosPtr(string* inicioGrid, int totalCasillas,
                                   int* totalFallos, int* totalTocados,
                                   int* totalHundidos) {
 	*totalFallos = 0;
 	*totalTocados = 0;
 	*totalHundidos = 0;
-	string* fin = gridDisparos + totalCasillas;
-	for (string* actual = gridDisparos; actual < fin; actual++) {
+	string* fin = inicioGrid + totalCasillas;
+	for (string* actual = inicioGrid; actual < fin; actual++) {
 		if (*actual == "O ") {
 			(*totalFallos)++;
 		} else if (*actual == "X ") {
@@ -457,12 +450,12 @@ void contarResultadosDisparosPtr(string* gridDisparos, int totalCasillas,
 		}
 	}
 }
-void contarCasillasSinDispararPtr(string* gridDisparos, int totalCasillas,
+void contarCasillasSinDispararPtr(string* inicioGrid, int totalCasillas,
                                    int* totalSinDisparar) {
 	*totalSinDisparar = 0;
 
-	string* fin = gridDisparos + totalCasillas;
-	for (string* actual = gridDisparos; actual < fin; actual++) {
+	string* fin = inicioGrid + totalCasillas;
+	for (string* actual = inicioGrid; actual < fin; actual++) {
 		if (*actual == "~ " || *actual == "B ") {
 			(*totalSinDisparar)++;
 		}
@@ -485,16 +478,16 @@ void resumenFlotaPtr(Barco* flota, int cantidad,
 		*vidaRestante += actual->vidaActual;
 	}
 }
-void contarSinDispararPorFilaPtr(string** gridDisparos, int totalFilas,
+void contarSinDispararPorFilaPtr(string** filaActual, int totalFilas,
                                   int resultadoPorFila[]) {
 	for (int fila = 0; fila < totalFilas; fila++) {
 		resultadoPorFila[fila] = 0;
 		for (int columna = 0; columna < TAM_TABLERO; columna++) {
-			if ((*gridDisparos)[columna] == "~ " || (*gridDisparos)[columna] == "B ") {
+			if ((*filaActual)[columna] == "~ " || (*filaActual)[columna] == "B ") {
 				resultadoPorFila[fila]++;
 			}
 		}
-		gridDisparos++;
+		filaActual++;
 	}
 }
 void mostrarEstadisticasConApuntadores() {
@@ -842,7 +835,6 @@ void faseColocacionBarcosCompleta() {
 			int confirmacion = leerOpcionValida(1, 2, "1. Si, empezar / 2. No, seguir colocando: ");
 			if (confirmacion == 1) {
 				terminoColocacion = true;
-				faseColocacionCompleta = true;
 				tipoColocacion = COLOCACION_MANUAL;
 				cout << "\nColocacion completada! Preparese para disparar." << endl;
 			}
@@ -888,7 +880,6 @@ void generarFlotaAleatoria() {
 			}
 		}
 	}
-	faseColocacionCompleta = true;
 	tipoColocacion = COLOCACION_ALEATORIA;
 }
 bool leerGridDesdeArchivo(const char nombreArchivo[], string gridLeido[][TAM_TABLERO]) {
@@ -1039,7 +1030,6 @@ bool cargarFlotaDesdeArchivo(const char nombreArchivo[]) {
 	aciertosTotales = 0;
 	fallosTotales = 0;
 	barcosHundidos = 0;
-	faseColocacionCompleta = true;
 	tipoColocacion = COLOCACION_ARCHIVO;
 	liberarHistorial();
 	cantidadBarcosSeleccionadosPtr = 0;
@@ -1158,8 +1148,8 @@ bool exportarReporteAArchivo(const char nombreArchivo[]) {
 		        << setw(5) << barco->tamanio
 		        << setw(6) << barco->vidaActual
 		        << setw(9) << (barco->estaHundido ? "HUNDIDO" : "A FLOTE")
-		        << "(" << barco->posXInicio << "," << barco->posYInicio << ")"
-		        << "        " << (barco->esHorizontal ? "Horizontal" : "Vertical")
+		        << setw(13) << ("(" + to_string(barco->posXInicio) + "," + to_string(barco->posYInicio) + ")")
+		        << (barco->esHorizontal ? "Horizontal" : "Vertical")
 		        << endl;
 	}
 	archivo << right;
@@ -1187,6 +1177,59 @@ bool exportarReporteAArchivo(const char nombreArchivo[]) {
 	}
 	archivo.close();
 	cout << "Reporte generado correctamente en \"" << nombreArchivo << "\"." << endl;
+	return true;
+}
+bool esCeldaDisparoValida(char simbolo) {
+	return simbolo == '~' || simbolo == 'B' || simbolo == 'O' || simbolo == 'X' || simbolo == 'H';
+}
+bool validarDatosPartida(PartidaBinaria& datos, RegistroDisparo* registros, int cantidadRegistros) {
+	bool codigoUsado[TOTAL_BARCOS_FLOTA] = {false};
+	BarcoBinario* barco = datos.barcos;
+	for (int i = 0; i < datos.cantidadBarcosGuardados; i++, barco++) {
+		barco->codigo[2] = '\0';
+		barco->tipo[TAM_TIPO_BARCO - 1] = '\0';
+		int indiceTipo = buscarTipoPorCodigo(string(barco->codigo));
+		if (indiceTipo == -1 || codigoUsado[indiceTipo]) {
+			return false;
+		}
+		codigoUsado[indiceTipo] = true;
+		if (barco->tamanio != CATALOGO_FLOTA[indiceTipo].tamanio ||
+		    barco->vidaActual < 0 || barco->vidaActual > barco->tamanio ||
+		    barco->estaHundido != (barco->vidaActual == 0)) {
+			return false;
+		}
+		int ultimaX = barco->esHorizontal ? barco->posXInicio + barco->tamanio - 1 : barco->posXInicio;
+		int ultimaY = barco->esHorizontal ? barco->posYInicio : barco->posYInicio + barco->tamanio - 1;
+		if (barco->posXInicio < COORD_MIN || barco->posYInicio < COORD_MIN ||
+		    ultimaX > COORD_MAX || ultimaY > COORD_MAX) {
+			return false;
+		}
+	}
+	for (int fila = 0; fila < TAM_TABLERO; fila++) {
+		for (int columna = 0; columna < TAM_TABLERO; columna++) {
+			datos.gridBarcos[fila][columna][2] = '\0';
+			string codigo = datos.gridBarcos[fila][columna];
+			if (codigo != "~" && buscarTipoPorCodigo(codigo) == -1) {
+				return false;
+			}
+			if (!esCeldaDisparoValida(datos.gridDisparos[fila][columna])) {
+				return false;
+			}
+		}
+	}
+	if (cantidadRegistros != datos.turnosRealizados) {
+		return false;
+	}
+	RegistroDisparo* registro = registros;
+	for (int i = 0; i < cantidadRegistros; i++, registro++) {
+		registro->codigoBarco[2] = '\0';
+		if (registro->turno != i + 1 ||
+		    registro->x < COORD_MIN || registro->x > COORD_MAX ||
+		    registro->y < COORD_MIN || registro->y > COORD_MAX ||
+		    (registro->resultado != 'A' && registro->resultado != 'T' && registro->resultado != 'H')) {
+			return false;
+		}
+	}
 	return true;
 }
 bool guardarPartidaBinaria(const char nombreArchivo[]) {
@@ -1281,6 +1324,13 @@ bool cargarPartidaBinaria(const char nombreArchivo[]) {
 		cout << "ERROR: El historial guardado en \"" << nombreArchivo << "\" esta incompleto." << endl;
 		return false;
 	}
+	if (!validarDatosPartida(datos, registros, cantidadRegistros)) {
+		delete[] registros;
+		liberacionesMemoria++;
+		cout << "ERROR: El archivo \"" << nombreArchivo
+		     << "\" contiene barcos, tableros o disparos invalidos." << endl;
+		return false;
+	}
 	datos.nombreJugador[TAM_NOMBRE - 1] = '\0';
 	strcpy(nombreJugador, datos.nombreJugador);
 	inicializarTablero();
@@ -1317,7 +1367,6 @@ bool cargarPartidaBinaria(const char nombreArchivo[]) {
 	fallosTotales = datos.fallosGuardados;
 	barcosHundidos = datos.barcosHundidosGuardados;
 	tipoColocacion = datos.tipoColocacion;
-	faseColocacionCompleta = true;
 	cantidadBarcosSeleccionadosPtr = 0;
 	liberarHistorial();
 	RegistroDisparo* registro = registros;
@@ -1489,13 +1538,21 @@ bool procesarDisparo(int posX, int posY, char &resultadoDisparo, char codigoBarc
 void registrarJugador() {
 	cout << "=== REGISTRO DE JUGADOR ===" << endl;
 	cout << "Ingrese su nombre: ";
-	cin.getline(nombreJugador, TAM_NOMBRE);
+	string entrada;
+	if (!getline(cin, entrada)) {
+		entrada = "";
+	}
 	cout << endl;
+	if (entrada.length() >= static_cast<size_t>(TAM_NOMBRE)) {
+		entrada = entrada.substr(0, TAM_NOMBRE - 1);
+		cout << "El nombre es muy largo, se usaran los primeros " << (TAM_NOMBRE - 1)
+		     << " caracteres." << endl;
+	}
+	strcpy(nombreJugador, entrada.c_str());
 	if (strlen(nombreJugador) == 0) {
 		strcpy(nombreJugador, "Jugador");
 		cout << "No se ingreso un nombre, se asignara 'Jugador' por defecto." << endl;
 	}
-	jugadorRegistrado = true;
 	cout << "Bienvenido, " << nombreJugador << "! Vamos a jugar FunFleet." << endl;
 }
 void mostrarReporte() {
@@ -1631,7 +1688,7 @@ void faseDisparos() {
 	}
 }
 int main() {
-	srand(time(0));
+	srand(static_cast<unsigned int>(time(0)));
 	gridBarcos = crearGrid(TAM_TABLERO, TAM_TABLERO);
 	gridDisparos = crearGrid(TAM_TABLERO, TAM_TABLERO);
 	atexit(liberarMemoria);
@@ -1695,6 +1752,8 @@ int main() {
 			case 4:
 				if (cantidadBarcosColocados == 0) {
 					cout << "\nTodavia no hay barcos. Use la opcion 1, 2 o 3." << endl;
+				} else if (disparosRealizados > 0) {
+					cout << "\nNo se puede ver la flota de una partida ya empezada: revelaria los barcos." << endl;
 				} else {
 					mostrarTableroJugador();
 				}
